@@ -45,6 +45,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/models.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/newDataset.csv">
           <value>
             <Attribute>
