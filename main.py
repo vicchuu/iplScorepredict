@@ -1,8 +1,11 @@
 import pandas as pd
 import numpy as np
 
-columns_to_read = ["date", "venue", "team1", "team2", "toss_winner", "toss_decision", "winner", "win_by_runs", "season",
-                   "win_by_wickets"]
+columns_to_read = ["date", "venue", "team1", "team2",  "winner",  "season","toss_winner","toss_decision"
+                   ]
+
+
+
 dataset_1 = pd.read_csv("csv/matches.csv", usecols=columns_to_read)
 
 # .rename(columns = {'test':'TEST'}, inplace = True)
@@ -13,11 +16,21 @@ present_teams = ["Sunrisers Hyderabad", "Mumbai Indians", "Royal Challengers Ban
                  "Kolkata Knight Riders", "Delhi Daredevils", "Kings XI Punjab",
                  "Chennai Super Kings", "Rajasthan Royals"]
 
+present_teams.sort()
+
+#print(present_teams)
 """Dataset-1 ends here..."""
 dataset_1 = dataset_1[(dataset_1["team1"].isin(present_teams)) & (dataset_1["team2"].isin(present_teams))]
 # print(len(dataset_1.team1.unique()),len(dataset_1.team2.unique()))
 # print(dataset_1.shape)
 # print
+
+
+venue = [x for x in dataset_1["venue"].unique()]
+
+venue.sort()
+
+print("venue :",len(venue))
 
 battingTeam = []
 bowlingTeam = []
@@ -48,11 +61,11 @@ for key, value in dataset_1.iterrows():
 # print(dataset_1.shape)
 # print(len(battingTeam))
 # print(len(bowlingTeam))
-dataset_1["batting_team"] = battingTeam
-dataset_1["bowling_team"] = bowlingTeam
+# dataset_1["batting_team"] = battingTeam
+# dataset_1["bowling_team"] = bowlingTeam
 
 # print(dataset_1.head(5))
-dataset_1 = dataset_1.drop(["team1", "team2"], axis=1)
+#dataset_1 = dataset_1.drop(["toss_winner", "team2"], axis=1)
 
 # toCSV = dataset_1.to_csv("newDataset.csv")
 
@@ -97,6 +110,8 @@ max     146.000000       10.000000
 
 dataset_1 = dataset_1.drop_duplicates(keep=False)
 
+
+
 # print(dataset_1.shape) # same shape so no duplicates
 
 
@@ -121,8 +136,9 @@ from sklearn.preprocessing import LabelEncoder
 
 import sklearn.preprocessing as pss
 
-label_Encod = ["toss_decision", "winner", "toss_winner", "batting_team", "bowling_team",
-               "venue"]  # 0 ,1 will be converted
+#['team1', 'team2', 'venue', 'toss_winner','city','toss_decision']
+label_Encod = ["team1","team2", "winner",
+               "venue","toss_winner","toss_decision"]  # 0 ,1 ,2,3,4 will be converted
 
 encoding = pss.LabelEncoder()
 for a in label_Encod:
@@ -132,7 +148,6 @@ for a in label_Encod:
 dataset_2 = pd.get_dummies(dataset_1)  # One hot encoding
 
 # print(dataset_2.iloc[1,:])
-
 
 # print(dataset_2.head(5))
 #
@@ -161,16 +176,20 @@ ytest = xtest["winner"]
 # print(ytest[0])
 
 xtest = xtest.drop(["date", "winner"], axis=1)
+
+print("Columns ;",xtrain.columns)
 #
 
 
+
 #
-# from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler
 #
-# sf_scaler = StandardScaler()
+sf_scaler = StandardScaler()
 #
-# #xtrain = pd.DataFrame(sf_scaler.fit_transform(xtrain))
-# #xtest = pd.DataFrame(sf_scaler.fit_transform(xtest))
+# xtrain = pd.DataFrame(sf_scaler.fit_transform(xtrain))
+# xtest = pd.DataFrame(sf_scaler.fit_transform(xtest))
+xtrain.to_csv("pick2.csv")
 # #sf_scaler.fit(xtest)
 #
 #
@@ -298,16 +317,21 @@ from sklearn.ensemble import RandomForestClassifier,RandomForestRegressor
 
 from sklearn import svm
 
+from sklearn.preprocessing import PolynomialFeatures
+#from sklearn.naive_bayes import GaussianNB
 
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.linear_model import Ridge ,LinearRegression
+from sklearn.tree import DecisionTreeRegressor ,DecisionTreeClassifier
 
 from sklearn.linear_model import LogisticRegression
 
 from sklearn.model_selection import cross_val_score
 
+from sklearn.naive_bayes import GaussianNB , MultinomialNB
+
 model_params = {
     'svm': {
-        'model': svm.SVC(gamma='auto'),
+        'model': svm.SVR(gamma='auto'),
         'params': {
             'C': [1, 10, 20],
             'kernel': ['rbf', 'linear']
@@ -341,30 +365,95 @@ model_params = {
             'max_features':["sqrt","log2"]
 
         }
-    }
+    },
+    'GaussianNB':{
+
+        'model':GaussianNB(),
+        'params':{
+            #'priors':[2,5,7,9,10],
+
+            'var_smoothing':[1e-9 ,1e-2,0.2,0.1,0.001]
+
+                }
+    },
+    # 'MultinomialNB':{
+    #     #alpha=1.0, fit_prior=True, class_prior=None)[source]¶
+    #     'model':MultinomialNB(),
+    #     'params':{
+    #         'alpha':[0.0 ,0.0000000001,0.5,1.0],
+    #         #'class_prior':[0,1,2,3,4,5,6,7]
+    #               },
+    #   },
+        'LinearRegression':{
+
+          'model':LinearRegression(),
+          'params':{
+              'n_jobs':[2,4,6,7]
+          }
+        },
+        'DecisionTreeClassifier':{
+            'model':DecisionTreeClassifier(random_state=0),
+            'params':{
+                'criterion':["gini", "entropy", "log_loss"],
+                'splitter':["best", "random"],
+                'max_features':["auto", "sqrt", "log2"],
+            }
+        },
+        'Ridge':{
+            'model':Ridge(),
+            'params':{
+                'alpha':[1e-15,1e-10,1e-8,1e-3,1e-2,1,5,10,20,30,35,40],
+                #'ridge_regressor' = [RandomizedSearchCV(ridge,parameters,cv=10,scoring='neg_mean_squared_error')
+
+                }
+        },
+        'PolynomialFeatures':{
+
+            'model':LinearRegression(),
+            'params':{
+
+               # 'n_jobs': [2, 4, 6, 7]
+            }
+
+        }
+
+
+
 
 }
+
+
 
 """lets create pickle obj and try to continoe in sam eorder"""
 
 """There are 5 sample model is added and we need to select the best among"""
+from sklearn.metrics import r2_score
+final_scores = []
 
-# final_scores = []
-#
-# for model_name,model_value in model_params.items():
-#
-#     clf = GridSearchCV(model_value['model'],model_value['params'] , cv =5,return_train_score=False)
-#
-#     clf.fit(xtrain,ytrain)
-#
-#     final_scores.append({
-#         'model': model_name,
-#         'best_score':clf.best_score_,
-#         'best_param':clf.best_params_
-#     }
-#     )
-#
-# new_answer = pd.DataFrame(final_scores , columns=["model","best_score","best_param"])
+for model_name,model_value in model_params.items():
+
+    if model_name == 'PolynomialFeatures':
+        poly_reg = PolynomialFeatures(degree=8)
+        xpoly = poly_reg.fit_transform(xtrain)
+        clf = RandomizedSearchCV(model_value['model'], model_value['params'], cv=5, return_train_score=False)
+
+        clf.fit(xpoly, ytrain)
+    else:
+        clf = RandomizedSearchCV(model_value['model'],model_value['params'] , cv =5,return_train_score=False)
+
+        clf.fit(xtrain,ytrain)
+    r2 =clf.score(xtrain,ytrain)
+    final_scores.append({
+
+        'model': model_name,
+
+        'r2Score':r2,
+        'best_score':clf.best_score_,
+        'best_param':clf.best_params_
+    }
+    )
+
+new_answer = pd.DataFrame(final_scores , columns=["model","best_score","best_param"])
 
 
 
@@ -372,7 +461,7 @@ model_params = {
 
 3,DecisionTreeRegressor,0.9544081146021319,"{'criterion': 'squared_error', 'splitter': 'best'}"
 """
-#(new_answer.to_csv("models.csv"))
+(new_answer.to_csv("models.csv"))
 
 model = DecisionTreeRegressor(criterion="squared_error",splitter="best")
 
@@ -385,6 +474,8 @@ score =  model.score(xtest,ytest)
 
 print("Score is :",score)
 
+
+print("xtrain :",xtrain.columns)
 
 """Saving model..."""
 
